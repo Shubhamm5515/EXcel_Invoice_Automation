@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hill Drive Invoice Generator</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <h1>🚗 Hill Drive</h1>
+                <p>Invoice Automation System</p>
+            </div>
+            <div class="status" id="apiStatus">
+                <span class="status-dot"></span>
+                <span>Checking...</span>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Tab Navigation -->
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="ocr">📸 OCR Upload</button>
+                <button class="tab-btn" data-tab="manual">✍️ Manual Entry</button>
+                <button class="tab-btn" data-tab="invoices">📋 Invoices</button>
+            </div>
+
+            <!-- OCR Upload Tab -->
+            <div class="tab-content active" id="ocr-tab">
+                <div class="card">
+                    <h2>Smart Invoice Generator</h2>
+                    <p class="subtitle">Upload photos, add text, paste messages - all information will be combined automatically</p>
+                    
+                    <!-- Multiple File Upload Area -->
+                    <div class="upload-area" id="uploadArea">
+                        <div class="upload-icon">📁</div>
+                        <p class="upload-text">Drag & drop booking slip(s) here</p>
+                        <p class="upload-subtext">You can upload multiple photos</p>
+                        <input type="file" id="fileInput" accept="image/*,.pdf" multiple hidden>
+                        <button class="btn btn-secondary" onclick="document.getElementById('fileInput').click()">
+                            Choose Files
+                        </button>
+                    </div>
+
+                    <!-- Preview Area for Multiple Files -->
+                    <div id="previewContainer" style="display: none; margin-bottom: 20px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <h3 style="margin: 0;">Uploaded Files (<span id="fileCount">0</span>)</h3>
+                            <button class="btn btn-secondary btn-sm" onclick="clearAllUploads()">Clear All</button>
+                        </div>
+                        <div id="previewGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px;"></div>
+                    </div>
+
+                    <!-- Document Images Upload (Aadhaar, DL, etc.) -->
+                    <div class="form-group" style="margin-top: 30px; padding: 20px; background: rgba(16, 185, 129, 0.05); border: 2px dashed rgba(16, 185, 129, 0.3); border-radius: 12px;">
+                        <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                            <span style="font-size: 24px;">🪪</span>
+                            <span style="font-weight: 600;">Customer Documents (Optional)</span>
+                        </label>
+                        <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 15px;">
+                            Upload Aadhaar, Driving License, or other ID documents. These will be embedded in the Excel invoice below the booking details.
+                        </p>
+                        <div class="upload-area" id="documentUploadArea" style="min-height: 120px; background: white;">
+                            <div class="upload-icon">📄</div>
+                            <p class="upload-text">Drag & drop documents here</p>
+                            <p class="upload-subtext">Aadhaar, DL, PAN, etc.</p>
+                            <input type="file" id="documentInput" accept="image/*" multiple hidden>
+                            <button class="btn btn-secondary" onclick="document.getElementById('documentInput').click()">
+                                Choose Documents
+                            </button>
+                        </div>
+                        <div id="documentPreviewContainer" style="display: none; margin-top: 15px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                <h4 style="margin: 0; font-size: 14px;">Documents (<span id="documentCount">0</span>)</h4>
+                                <button class="btn btn-secondary btn-sm" onclick="clearDocuments()">Clear</button>
+                            </div>
+                            <div id="documentPreviewGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Combined Information Block -->
+                    <div class="form-group">
+                        <label for="userText">
+                            📝 All Booking Information
+                            <span style="color: var(--text-secondary); font-weight: normal; font-size: 14px;">
+                                (Paste WhatsApp messages, add typed details, or any other information)
+                            </span>
+                        </label>
+                        <textarea 
+                            id="userText" 
+                            rows="8" 
+                            placeholder="Paste or type all booking information here...&#10;&#10;Examples:&#10;• WhatsApp message: 'Hi, need Swift Dzire from 25th Jan to 30th Jan'&#10;• Typed details: 'Customer: Rajesh Kumar, Mobile: 9876543210'&#10;• Email content: Copy-paste entire booking email&#10;• Any other details about the booking&#10;&#10;All information from photos and this text will be combined automatically!"
+                        ></textarea>
+                        <div style="margin-top: 8px; padding: 12px; background: rgba(37, 99, 235, 0.1); border-radius: 8px; font-size: 14px;">
+                            <strong>💡 Tip:</strong> The system will intelligently combine information from:
+                            <ul style="margin: 8px 0 0 20px;">
+                                <li>All uploaded photos (OCR extraction)</li>
+                                <li>Text you type or paste here</li>
+                                <li>WhatsApp/Email messages</li>
+                            </ul>
+                            Missing details? No problem - add them here!
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="button-group">
+                        <button class="btn btn-primary" id="generateBtn" onclick="generateInvoice()" disabled>
+                            <span class="btn-text">Generate Invoice</span>
+                            <span class="btn-loader" style="display: none;">⏳ Processing...</span>
+                        </button>
+                        <button class="btn btn-secondary" onclick="clearForm()">Clear</button>
+                    </div>
+
+                    <!-- Progress -->
+                    <div class="progress-container" id="progressContainer" style="display: none;">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+                        <p class="progress-text" id="progressText">Processing...</p>
+                    </div>
+
+                    <!-- Result -->
+                    <div class="result-container" id="resultContainer" style="display: none;"></div>
+                </div>
+            </div>
+
+            <!-- Manual Entry Tab -->
+            <div class="tab-content" id="manual-tab">
+                <div class="card">
+                    <h2>Manual Invoice Entry</h2>
+                    <p class="subtitle">Enter booking details manually</p>
+
+                    <form id="manualForm" onsubmit="createManualInvoice(event)">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="customerName">Customer Name *</label>
+                                <input type="text" id="customerName" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="mobileNumber">Mobile Number *</label>
+                                <input type="tel" id="mobileNumber" pattern="[0-9]{10}" required>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="vehicleName">Vehicle Name *</label>
+                                <input type="text" id="vehicleName" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="vehicleNumber">Vehicle Number</label>
+                                <input type="text" id="vehicleNumber" placeholder="RJ14AB1234">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="startDate">Start Date & Time *</label>
+                                <input type="datetime-local" id="startDate" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="endDate">End Date & Time *</label>
+                                <input type="datetime-local" id="endDate" required>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="durationDays">Duration (Days) *</label>
+                                <input type="number" id="durationDays" min="1" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="baseRent">Base Rent (₹) *</label>
+                                <input type="number" id="baseRent" min="0" required>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="includedKm">Included KM</label>
+                                <input type="number" id="includedKm" min="0">
+                            </div>
+                            <div class="form-group">
+                                <label for="extraKm">Extra KM</label>
+                                <input type="number" id="extraKm" min="0">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="extraKmRate">Extra KM Rate (₹/km)</label>
+                                <input type="number" id="extraKmRate" min="0">
+                            </div>
+                            <div class="form-group">
+                                <label for="totalAmount">Total Amount (₹) *</label>
+                                <input type="number" id="totalAmount" min="0" required>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="advancePaid">Advance Paid (₹)</label>
+                                <input type="number" id="advancePaid" min="0">
+                            </div>
+                            <div class="form-group">
+                                <label for="paymentMode">Payment Mode</label>
+                                <select id="paymentMode">
+                                    <option value="Online">Online</option>
+                                    <option value="Cash">Cash</option>
+                                    <option value="Card">Card</option>
+                                    <option value="UPI">UPI</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="address">Address</label>
+                            <textarea id="address" rows="2"></textarea>
+                        </div>
+
+                        <div class="button-group">
+                            <button type="submit" class="btn btn-primary">
+                                <span class="btn-text">Create Invoice</span>
+                                <span class="btn-loader" style="display: none;">⏳ Creating...</span>
+                            </button>
+                            <button type="reset" class="btn btn-secondary">Reset</button>
+                        </div>
+
+                        <div class="result-container" id="manualResultContainer" style="display: none;"></div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Invoices List Tab -->
+            <div class="tab-content" id="invoices-tab">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Generated Invoices</h2>
+                        <button class="btn btn-secondary btn-sm" onclick="loadInvoices()">🔄 Refresh</button>
+                    </div>
+                    
+                    <div id="invoicesList">
+                        <div class="loading">Loading invoices...</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Hill Drive Invoice Automation System v1.0</p>
+            <p>Powered by OCR.space & FastAPI</p>
+        </footer>
+    </div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>

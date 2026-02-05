@@ -1,0 +1,67 @@
+========================================
+HILL DRIVE INVOICE AUTOMATION
+Copy-Paste These Commands One by One
+========================================
+
+STEP 1: Navigate to Invoice folder
+-----------------------------------
+cd C:\Users\ASUS\Desktop\Invoice
+
+
+STEP 2: Install packages (wait 1-2 minutes)
+-----------------------------------
+py -3.12 -m pip install -r requirements.txt
+
+
+STEP 3: Create configuration file
+-----------------------------------
+copy .env.example .env
+
+
+STEP 4: Add your API key (Notepad will open)
+-----------------------------------
+notepad .env
+
+>>> In Notepad, change this line:
+>>> OCR_SPACE_API_KEY=your_api_key_here
+>>> 
+>>> To your actual key:
+>>> OCR_SPACE_API_KEY=K87654321
+>>> 
+>>> Save and close Notepad
+
+
+STEP 5: Create output folder
+-----------------------------------
+mkdir generated_invoices
+
+
+STEP 6: Start the server
+-----------------------------------
+py -3.12 -m uvicorn main:app --reload
+
+
+STEP 7: Open browser
+-----------------------------------
+http://localhost:8000
+
+
+========================================
+DONE! Upload invoices and generate Excel files.
+Press Ctrl+C to stop the server when done.
+========================================
+
+
+TROUBLESHOOTING
+-----------------------------------
+
+If "py -3.12" doesn't work, try:
+python -m pip install -r requirements.txt
+python -m uvicorn main:app --reload
+
+If port 8000 is busy, use:
+py -3.12 -m uvicorn main:app --reload --port 8001
+Then open: http://localhost:8001
+
+If you get errors, make sure you're in the Invoice folder:
+cd C:\Users\ASUS\Desktop\Invoice
