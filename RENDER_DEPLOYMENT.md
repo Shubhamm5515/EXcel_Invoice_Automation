@@ -1,282 +1,307 @@
 # 🚀 Deploy to Render.com - Step by Step
 
-## Why Render.com?
-
-✅ **Free tier** - 750 hours/month  
-✅ **Easy setup** - Deploy in 5 minutes  
-✅ **Auto-deploy** - Push to GitHub = Auto deploy  
-✅ **HTTPS** - Free SSL certificate  
-✅ **Reliable** - Good uptime  
+**Time:** 5 minutes  
+**Cost:** Free (with cold start) or $7/month (always-on)  
+**Difficulty:** ⭐ Very Easy
 
 ---
 
-## Prerequisites
+## Step 1: Sign Up (1 minute)
 
-1. GitHub account
-2. Your code pushed to GitHub
-3. Render.com account (free)
-
----
-
-## Step 1: Push Code to GitHub (5 minutes)
-
-```bash
-# Initialize git (if not already)
-git init
-
-# Add all files
-git add .
-
-# Commit
-git commit -m "Initial commit - Hill Drive Invoice System"
-
-# Create repo on GitHub, then:
-git remote add origin https://github.com/YOUR_USERNAME/hilldrive-invoice.git
-git push -u origin main
-```
-
-**Important:** Add to `.gitignore`:
-```
-.env
-google_credentials.json
-__pycache__/
-*.pyc
-venv/
-generated_invoices/*.xlsx
-invoice_counter.json
-```
+1. Go to: **https://render.com**
+2. Click **"Get Started"**
+3. Sign up with **GitHub** (easiest)
+4. Authorize Render to access your GitHub
 
 ---
 
-## Step 2: Create Render Account (2 minutes)
+## Step 2: Create Web Service (2 minutes)
 
-1. Go to: https://render.com
-2. Click "Get Started"
-3. Sign up with GitHub (easiest)
-4. Authorize Render to access your repos
-
----
-
-## Step 3: Create New Web Service (3 minutes)
-
-1. **Click** "New +" → "Web Service"
-2. **Connect** your GitHub repository
-3. **Configure:**
-   - **Name:** `hilldrive-invoice-api`
-   - **Region:** Singapore (or closest to you)
-   - **Branch:** `main`
-   - **Runtime:** Python 3
-   - **Build Command:** `pip install -r requirements.txt`
-   - **Start Command:** `uvicorn main:app --host 0.0.0.0 --port $PORT`
-   - **Plan:** Free
-
-4. **Click** "Create Web Service"
+1. Click **"New +"** button (top right)
+2. Select **"Web Service"**
+3. Click **"Connect account"** if needed
+4. Find your repo: **"EXcel_Invoice_Automation"**
+5. Click **"Connect"**
 
 ---
 
-## Step 4: Add Environment Variables (3 minutes)
+## Step 3: Configure Service (2 minutes)
 
-In Render dashboard:
+### Basic Settings:
 
-1. Go to **Environment** tab
-2. Add these variables:
+- **Name:** `hilldrive-invoice` (or any name you want)
+- **Region:** Choose closest to you (e.g., Singapore, Oregon)
+- **Branch:** `master` or `main`
+- **Root Directory:** Leave blank
+- **Runtime:** `Python 3`
+
+### Build & Deploy:
+
+- **Build Command:**
+  ```bash
+  pip install -r requirements.txt
+  ```
+
+- **Start Command:**
+  ```bash
+  uvicorn main:app --host 0.0.0.0 --port $PORT
+  ```
+
+### Instance Type:
+
+- **Free:** Select "Free" (has cold start after 15 min inactivity)
+- **Paid:** Select "Starter" $7/month (always-on, no cold start)
+
+---
+
+## Step 4: Add Environment Variables (1 minute)
+
+Scroll down to **"Environment Variables"** section.
+
+Click **"Add Environment Variable"** and add these:
 
 ```
 OCR_SPACE_API_KEY = K88999613688957
+OCR_SPACE_API_URL = https://api.ocr.space/parse/image
+
+GEMINI_API_KEY = AIzaSyCqib0TlPBYcH3qoqlQvkgWJXkXu7t0jOk
+GEMINI_MODEL = gemini-1.5-flash
+USE_GEMINI = false
+
 OPENROUTER_API_KEY = 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
 OPENROUTER_MODEL = google/gemini-2.5-flash
 USE_OPENROUTER = true
-USE_MASTER_FILE = false
+
+API_HOST = 0.0.0.0
+API_PORT = 8000
+DEBUG = false
+
+MAX_FILE_SIZE_MB = 5
+ALLOWED_EXTENSIONS = jpg,jpeg,png,pdf
+
 TEMPLATE_PATH = inn sample.xlsx
 OUTPUT_DIR = generated_invoices
-API_PORT = $PORT
+USE_MASTER_FILE = false
+MASTER_FILE_PATH = generated_invoices/all_invoices.xlsx
+
+CORS_ORIGINS = *
 ```
 
-3. **Click** "Save Changes"
+**Note:** Set `DEBUG = false` for production!
 
 ---
 
-## Step 5: Deploy! (2 minutes)
+## Step 5: Deploy! (1 minute)
 
-Render will automatically:
-1. Clone your repo
-2. Install dependencies
-3. Start the server
-4. Give you a URL
-
-**Your URL:** `https://hilldrive-invoice-api.onrender.com`
+1. Click **"Create Web Service"** button at bottom
+2. Wait for deployment (3-5 minutes)
+3. Watch the logs - you'll see:
+   - Installing dependencies
+   - Starting server
+   - "Live" status
 
 ---
 
-## Step 6: Test Deployment (1 minute)
+## Step 6: Test Your App (1 minute)
+
+Your app will be live at:
+```
+https://hilldrive-invoice.onrender.com
+```
+
+(Replace `hilldrive-invoice` with your chosen name)
+
+### Test URLs:
+
+1. **Homepage:**
+   ```
+   https://hilldrive-invoice.onrender.com
+   ```
+
+2. **Health Check:**
+   ```
+   https://hilldrive-invoice.onrender.com/health
+   ```
+
+3. **API Docs:**
+   ```
+   https://hilldrive-invoice.onrender.com/docs
+   ```
+
+---
+
+## ✅ You're Live!
+
+Your invoice system is now:
+- ✅ Deployed on Render
+- ✅ Accessible from anywhere
+- ✅ Auto-updates from GitHub
+- ✅ Free SSL certificate (HTTPS)
+- ✅ Professional URL
+
+---
+
+## 🔄 Auto-Deploy from GitHub
+
+Every time you push to GitHub, Render automatically deploys!
 
 ```bash
-# Test health endpoint
-curl https://hilldrive-invoice-api.onrender.com/health
-
-# Should return:
-# {"status":"healthy","timestamp":"...","version":"1.0.0",...}
-```
-
-Open in browser:
-```
-https://hilldrive-invoice-api.onrender.com
-```
-
-You should see your web interface!
-
----
-
-## Step 7: Setup Google Drive (Optional)
-
-For cloud storage:
-
-1. Upload `google_credentials.json` as secret file in Render
-2. Or use Render's disk storage (paid feature)
-3. Or keep local storage only
-
----
-
-## Auto-Deploy Setup
-
-Every time you push to GitHub:
-1. Render detects the push
-2. Automatically rebuilds
-3. Deploys new version
-4. Zero downtime
-
-```bash
-# Make changes
+# On your local computer
 git add .
-git commit -m "Updated feature"
+git commit -m "Update invoice system"
 git push
 
-# Render auto-deploys!
+# Render automatically deploys the changes!
 ```
 
 ---
 
-## Free Tier Limitations
+## 📊 Monitor Your App
 
-⚠️ **Important:**
+### View Logs:
 
-1. **Sleeps after 15 min** of inactivity
-2. **Wakes in ~30 seconds** on first request
-3. **750 hours/month** (enough for 24/7 if always active)
+1. Go to Render dashboard
+2. Click your service
+3. Click **"Logs"** tab
+4. See real-time logs
 
-**Solution:** Use a free uptime monitor (like UptimeRobot) to ping every 14 minutes.
+### View Metrics:
 
----
-
-## Upgrade Options
-
-If you need always-on:
-
-**Starter Plan:** $7/month
-- No sleep
-- 512 MB RAM
-- Always available
+1. Click **"Metrics"** tab
+2. See:
+   - CPU usage
+   - Memory usage
+   - Request count
+   - Response times
 
 ---
 
-## Custom Domain (Optional)
+## 🔧 Common Issues & Fixes
 
-1. Buy domain (e.g., from Namecheap)
-2. In Render: Settings → Custom Domain
-3. Add your domain
-4. Update DNS records
-5. Done! Free HTTPS included
+### Issue 1: Build Failed
 
----
+**Error:** `ModuleNotFoundError`
 
-## Monitoring
+**Fix:** Check `requirements.txt` has all packages:
+```bash
+fastapi
+uvicorn
+python-dotenv
+pydantic
+pydantic-settings
+openpyxl
+pillow
+requests
+python-multipart
+google-generativeai
+asgiref
+```
 
-Render provides:
-- ✅ Logs (real-time)
-- ✅ Metrics (CPU, RAM)
-- ✅ Deploy history
-- ✅ Health checks
+### Issue 2: App Not Starting
 
-Access from dashboard.
+**Error:** `Application startup failed`
 
----
+**Fix:** Check environment variables are set correctly
 
-## Troubleshooting
+### Issue 3: 502 Bad Gateway
 
-### Build Failed
-- Check `requirements.txt` is correct
-- Check Python version compatibility
-- View build logs in Render
-
-### App Not Starting
-- Check start command is correct
-- Check port is `$PORT` (Render provides this)
-- View logs in Render
-
-### Environment Variables Not Working
-- Check spelling
-- Check they're saved
-- Redeploy after adding variables
+**Fix:** 
+- Check Start Command is correct
+- Check PORT is `$PORT` (not hardcoded)
+- View logs for errors
 
 ---
 
-## Alternative: Railway.app
+## 💰 Pricing
 
-If Render doesn't work:
+### Free Tier:
+- ✅ 750 hours/month
+- ✅ 512 MB RAM
+- ✅ 100 GB bandwidth
+- ⚠️ Spins down after 15 min inactivity (cold start ~30 sec)
 
-1. Go to railway.app
-2. Connect GitHub
-3. Deploy (similar process)
-4. Get $5 free credit/month
+### Starter ($7/month):
+- ✅ Always-on (no cold start)
+- ✅ 512 MB RAM
+- ✅ Unlimited bandwidth
+- ✅ Worth it for production!
 
----
-
-## Files Needed
-
-✅ `requirements.txt` - Dependencies  
-✅ `main.py` - Your app  
-✅ `render.yaml` - Render config (optional)  
-✅ `.gitignore` - Exclude sensitive files  
-
----
-
-## Security Checklist
-
-Before deploying:
-
-- [ ] `.env` in `.gitignore`
-- [ ] `google_credentials.json` in `.gitignore`
-- [ ] API keys as environment variables
-- [ ] No sensitive data in code
-- [ ] CORS configured correctly
+### Pro ($25/month):
+- ✅ 2 GB RAM
+- ✅ Priority support
+- ✅ More resources
 
 ---
 
-## Cost Summary
+## 🎯 Upgrade to Always-On (No Cold Start)
 
-**Free Forever:**
-- Render.com free tier
-- Google Drive 15 GB
-- GitHub (public repo)
+1. Go to your service dashboard
+2. Click **"Settings"**
+3. Scroll to **"Instance Type"**
+4. Select **"Starter"** ($7/month)
+5. Click **"Save Changes"**
 
-**Total:** $0/month
-
-**If you need always-on:**
-- Render Starter: $7/month
-- Still very affordable!
+Your app will now be always-on with no cold start!
 
 ---
 
-## Next Steps
+## 🌐 Custom Domain (Optional)
 
-1. ✅ Push code to GitHub
-2. ✅ Create Render account
-3. ✅ Deploy web service
-4. ✅ Add environment variables
-5. ✅ Test your live URL
-6. ✅ Share with team!
+Want your own domain like `invoice.yourdomain.com`?
 
-**Deployment time: ~15 minutes total**
+1. Buy domain from Namecheap, GoDaddy, etc.
+2. In Render dashboard, go to **"Settings"**
+3. Click **"Custom Domain"**
+4. Add your domain
+5. Update DNS records (Render shows you how)
+6. Done! Free SSL included
 
-Your invoice system will be live at:
-`https://hilldrive-invoice-api.onrender.com`
+---
+
+## 🔐 Security Best Practices
+
+1. **Never commit `.env` to GitHub** (already in `.gitignore`)
+2. **Use environment variables** for all secrets
+3. **Set DEBUG=false** in production
+4. **Enable CORS** only for your domains
+5. **Monitor logs** regularly
+
+---
+
+## 📱 Share with Your Team
+
+Share this URL with your team:
+```
+https://hilldrive-invoice.onrender.com
+```
+
+They can:
+- Upload images for OCR
+- Create invoices manually
+- Download generated invoices
+- View all invoices
+
+---
+
+## 🆘 Need Help?
+
+- **Render Docs:** https://render.com/docs
+- **Render Community:** https://community.render.com
+- **Support:** support@render.com
+
+---
+
+## 🎉 Success!
+
+Your invoice automation system is now live on Render!
+
+**Next Steps:**
+1. Test invoice creation
+2. Setup Google Drive (optional)
+3. Share URL with team
+4. Monitor usage
+5. Upgrade to Starter when ready
+
+---
+
+**Your app is live and ready to use! 🚀**

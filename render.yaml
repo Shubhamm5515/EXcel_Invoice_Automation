@@ -1,18 +1,46 @@
 services:
   - type: web
-    name: hilldrive-invoice-api
-    env: python
-    region: singapore
+    name: hilldrive-invoice
+    runtime: python
     plan: free
-    buildCommand: pip install -r requirements.txt
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
-        value: 3.12.0
+        value: 3.10.13
       - key: OCR_SPACE_API_KEY
         sync: false
+      - key: OCR_SPACE_API_URL
+        value: https://api.ocr.space/parse/image
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-1.5-flash
+      - key: USE_GEMINI
+        value: false
       - key: OPENROUTER_API_KEY
         sync: false
+      - key: OPENROUTER_MODEL
+        value: google/gemini-2.5-flash
+      - key: USE_OPENROUTER
+        value: true
+      - key: API_HOST
+        value: 0.0.0.0
+      - key: API_PORT
+        value: 8000
+      - key: DEBUG
+        value: false
+      - key: MAX_FILE_SIZE_MB
+        value: 5
+      - key: ALLOWED_EXTENSIONS
+        value: jpg,jpeg,png,pdf
+      - key: TEMPLATE_PATH
+        value: inn sample.xlsx
+      - key: OUTPUT_DIR
+        value: generated_invoices
       - key: USE_MASTER_FILE
         value: false
-    healthCheckPath: /health
+      - key: MASTER_FILE_PATH
+        value: generated_invoices/all_invoices.xlsx
+      - key: CORS_ORIGINS
+        value: "*"
