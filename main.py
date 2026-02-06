@@ -51,6 +51,7 @@ app.add_middleware(
 
 
 @app.get("/", response_class=HTMLResponse)
+@app.head("/")
 async def root():
     """Serve the frontend"""
     try:
@@ -88,6 +89,7 @@ async def root():
 
 
 @app.get("/health", response_model=HealthResponse)
+@app.head("/health")
 async def health_check():
     """Detailed health check"""
     ai_service = "OpenRouter AI" if openrouter_extractor.enabled else ("Gemini AI" if gemini_extractor.enabled else "Basic Pattern Matching")
