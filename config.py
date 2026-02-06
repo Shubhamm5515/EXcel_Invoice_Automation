@@ -41,10 +41,6 @@ class Settings(BaseSettings):
     # CORS Configuration
     cors_origins: str = "http://localhost:3000,http://localhost:8080"
     
-    # Telegram Bot Configuration (RECOMMENDED - Works everywhere!)
-    telegram_bot_token: str = ""
-    telegram_chat_id: str = ""
-    
     class Config:
         env_file = ".env"
         case_sensitive = False

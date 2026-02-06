@@ -5,14 +5,33 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hill Drive Invoice Generator</title>
     <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/car-3d.css">
 </head>
 <body>
     <div class="container">
         <!-- Header -->
         <header class="header">
             <div class="logo">
-                <h1>🚗 Hill Drive</h1>
-                <p>Invoice Automation System</p>
+                <!-- 3D Car Model -->
+                <div class="car-3d-container">
+                    <div class="car-3d">
+                        <div class="car-body">
+                            <div class="car-window front"></div>
+                            <div class="car-window back"></div>
+                            <div class="car-roof"></div>
+                            <div class="car-mirror left"></div>
+                            <div class="car-mirror right"></div>
+                            <div class="car-headlight left"></div>
+                            <div class="car-headlight right"></div>
+                            <div class="car-wheel front"></div>
+                            <div class="car-wheel back"></div>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <h1>Hill Drive</h1>
+                    <p>Invoice Automation System</p>
+                </div>
             </div>
             <div class="status" id="apiStatus">
                 <span class="status-dot"></span>
@@ -22,6 +41,19 @@
 
         <!-- Main Content -->
         <main class="main-content">
+            <!-- 3D Car Viewer Link -->
+            <div style="text-align: center; margin: 20px 0; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+                <a href="/static/car-viewer.html" 
+                   style="display: inline-block; padding: 15px 40px; background: white; color: #667eea; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 18px; transition: all 0.3s; box-shadow: 0 4px 10px rgba(0,0,0,0.2);"
+                   onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.3)'"
+                   onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 10px rgba(0,0,0,0.2)'">
+                    🚗 View 3D Car Showroom
+                </a>
+                <p style="color: white; margin-top: 10px; font-size: 14px; opacity: 0.9;">
+                    Interactive 3D model • Drag to rotate • Change colors • Professional lighting
+                </p>
+            </div>
+
             <!-- Tab Navigation -->
             <div class="tabs">
                 <button class="tab-btn active" data-tab="ocr">📸 OCR Upload</button>

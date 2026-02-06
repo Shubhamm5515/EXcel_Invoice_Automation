@@ -1,0 +1,242 @@
+/* 3D Car Animation - Pure CSS */
+
+.car-3d-container {
+    position: relative;
+    width: 120px;
+    height: 80px;
+    perspective: 1000px;
+    margin: 0 20px;
+}
+
+.car-3d {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    transform-style: preserve-3d;
+    animation: rotateCar 8s infinite linear;
+}
+
+@keyframes rotateCar {
+    0% { transform: rotateY(0deg) rotateX(10deg); }
+    100% { transform: rotateY(360deg) rotateX(10deg); }
+}
+
+/* Car Body */
+.car-body {
+    position: absolute;
+    width: 100px;
+    height: 40px;
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    border-radius: 10px 10px 5px 5px;
+    top: 20px;
+    left: 10px;
+    transform-style: preserve-3d;
+    box-shadow: 0 10px 30px rgba(37, 99, 235, 0.3);
+}
+
+.car-body::before {
+    content: '';
+    position: absolute;
+    width: 60px;
+    height: 25px;
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    border-radius: 8px 8px 0 0;
+    top: -20px;
+    left: 20px;
+    box-shadow: inset 0 -2px 5px rgba(0, 0, 0, 0.2);
+}
+
+/* Windows */
+.car-window {
+    position: absolute;
+    background: rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(5px);
+}
+
+.car-window.front {
+    width: 25px;
+    height: 18px;
+    top: -18px;
+    left: 22px;
+    border-radius: 5px 5px 0 0;
+    border: 2px solid rgba(255, 255, 255, 0.5);
+}
+
+.car-window.back {
+    width: 25px;
+    height: 18px;
+    top: -18px;
+    right: 8px;
+    border-radius: 5px 5px 0 0;
+    border: 2px solid rgba(255, 255, 255, 0.5);
+}
+
+/* Wheels */
+.car-wheel {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    background: radial-gradient(circle, #1f2937 40%, #374151 60%, #1f2937 100%);
+    border-radius: 50%;
+    bottom: -5px;
+    box-shadow: 
+        inset 0 0 5px rgba(0, 0, 0, 0.5),
+        0 2px 10px rgba(0, 0, 0, 0.3);
+    animation: spinWheel 1s infinite linear;
+}
+
+.car-wheel::before {
+    content: '';
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background: #6b7280;
+    border-radius: 50%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.car-wheel.front {
+    left: 15px;
+}
+
+.car-wheel.back {
+    right: 15px;
+}
+
+@keyframes spinWheel {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Headlights */
+.car-headlight {
+    position: absolute;
+    width: 8px;
+    height: 6px;
+    background: radial-gradient(circle, #fbbf24 0%, #f59e0b 100%);
+    border-radius: 2px;
+    top: 50%;
+    transform: translateY(-50%);
+    box-shadow: 0 0 10px rgba(251, 191, 36, 0.6);
+    animation: blink 2s infinite;
+}
+
+.car-headlight.left {
+    left: -2px;
+}
+
+.car-headlight.right {
+    right: -2px;
+}
+
+@keyframes blink {
+    0%, 90%, 100% { opacity: 1; }
+    95% { opacity: 0.3; }
+}
+
+/* Taillights */
+.car-taillight {
+    position: absolute;
+    width: 6px;
+    height: 8px;
+    background: radial-gradient(circle, #ef4444 0%, #dc2626 100%);
+    border-radius: 2px;
+    top: 50%;
+    transform: translateY(-50%);
+    box-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
+}
+
+.car-taillight.left {
+    left: 2px;
+}
+
+.car-taillight.right {
+    right: 2px;
+}
+
+/* Roof Details */
+.car-roof {
+    position: absolute;
+    width: 50px;
+    height: 3px;
+    background: linear-gradient(90deg, transparent 0%, #1e40af 50%, transparent 100%);
+    top: -22px;
+    left: 25px;
+    border-radius: 2px;
+}
+
+/* Side Mirrors */
+.car-mirror {
+    position: absolute;
+    width: 8px;
+    height: 6px;
+    background: #1f2937;
+    border-radius: 2px;
+    top: -8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+}
+
+.car-mirror.left {
+    left: 15px;
+    transform: rotate(-10deg);
+}
+
+.car-mirror.right {
+    right: 15px;
+    transform: rotate(10deg);
+}
+
+/* Hover Effect */
+.car-3d-container:hover .car-3d {
+    animation-play-state: paused;
+}
+
+.car-3d-container:hover .car-body {
+    box-shadow: 0 15px 40px rgba(37, 99, 235, 0.5);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .car-3d-container {
+        width: 80px;
+        height: 60px;
+        margin: 0 10px;
+    }
+    
+    .car-body {
+        width: 70px;
+        height: 30px;
+        top: 15px;
+        left: 5px;
+    }
+    
+    .car-body::before {
+        width: 40px;
+        height: 18px;
+        top: -15px;
+        left: 15px;
+    }
+    
+    .car-wheel {
+        width: 15px;
+        height: 15px;
+    }
+}
+
+/* Loading Animation */
+@keyframes carEnter {
+    0% {
+        opacity: 0;
+        transform: translateX(-100px) rotateY(-90deg);
+    }
+    100% {
+        opacity: 1;
+        transform: translateX(0) rotateY(0deg);
+    }
+}
+
+.car-3d-container {
+    animation: carEnter 1s ease-out;
+}

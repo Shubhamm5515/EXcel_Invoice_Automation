@@ -45,6 +45,17 @@ body {
     border-bottom: 2px solid var(--border-color);
 }
 
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.logo > div:last-child {
+    display: flex;
+    flex-direction: column;
+}
+
 .logo h1 {
     font-size: 28px;
     color: var(--primary-color);

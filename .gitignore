@@ -1,19 +1,9 @@
-# Environment variables and secrets
-.env
-.env.local
-.env.production
-google_credentials.json
-google_credentials.json.backup
-
 # Python
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
-venv/
-env/
-ENV/
 build/
 develop-eggs/
 dist/
@@ -30,12 +20,10 @@ wheels/
 .installed.cfg
 *.egg
 
-# Generated invoices (don't upload customer data)
-generated_invoices/*.xlsx
-!generated_invoices/.gitkeep
-
-# Invoice counter (will be created on server)
-invoice_counter.json
+# Virtual Environment
+venv/
+ENV/
+env/
 
 # IDE
 .vscode/
@@ -44,14 +32,42 @@ invoice_counter.json
 *.swo
 *~
 
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Keep .env.example
+!.env.example
+
+# Generated files
+generated_invoices/*.xlsx
+!generated_invoices/.gitkeep
+
+# Logs
+*.log
+logs/
+
 # OS
 .DS_Store
 Thumbs.db
 
-# Logs
-*.log
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
 
 # Temporary files
 *.tmp
 *.bak
-*.cache
+*.swp
+
+# Credentials
+google_credentials.json
+*.pem
+*.key
+
+# Backup files
+*_old.py
+*_backup.py
