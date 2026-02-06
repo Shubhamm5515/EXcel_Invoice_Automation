@@ -145,7 +145,7 @@ Server runs on: **http://localhost:8002**
 ### Environment Variables (.env)
 ```env
 # OCR & AI
-OCR_SPACE_API_KEY=K88999613688957
+OCR_SPACE_API_KEY=your_ocr_api_key_here
 OPENROUTER_API_KEY=sk-or-v1-...
 USE_OPENROUTER=true
 

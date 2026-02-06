@@ -145,7 +145,7 @@ GEMINI_API_KEY=AIzaSyCqib0TlPBYcH3qoqlQvkgWJXkXu7t0jOk
 GEMINI_MODEL=gemini-1.5-flash
 USE_GEMINI=false
 
-OPENROUTER_API_KEY=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
+OPENROUTER_API_KEY=your_openrouter_api_key_here
 OPENROUTER_MODEL=google/gemini-2.5-flash
 USE_OPENROUTER=true
 

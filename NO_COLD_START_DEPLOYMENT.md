@@ -154,7 +154,7 @@
 
 ### Step 3: Add Environment Variables
 ```
-OCR_SPACE_API_KEY=K88999613688957
+OCR_SPACE_API_KEY=your_ocr_api_key_here
 OPENROUTER_API_KEY=sk-or-v1-...
 USE_MASTER_FILE=false
 ```

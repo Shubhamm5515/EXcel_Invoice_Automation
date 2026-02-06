@@ -139,8 +139,8 @@ Before deploying, make sure you have:
 In `.env` file:
 
 ```env
-OCR_SPACE_API_KEY=K88999613688957
-OPENROUTER_API_KEY=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
+OCR_SPACE_API_KEY=your_ocr_api_key_here
+OPENROUTER_API_KEY=your_openrouter_api_key_here
 OPENROUTER_MODEL=google/gemini-2.5-flash
 USE_OPENROUTER=true
 USE_MASTER_FILE=false
