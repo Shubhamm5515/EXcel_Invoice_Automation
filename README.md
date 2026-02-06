@@ -8,8 +8,10 @@ Automated invoice generation system with OCR, AI extraction, and cloud storage f
 - 🤖 **AI-Powered Extraction** - Smart data extraction using OpenRouter AI
 - 📄 **Excel Invoice Generation** - Professional invoices using custom template
 - 📸 **Document Embedding** - Embed customer documents (Aadhaar, DL) in invoices
-- ☁️ **Cloud Storage** - Auto-upload to Google Drive with month-wise folders
+- ☁️ **Cloud Backup** - Auto-upload to Dropbox (FREE 2GB) or Google Drive
 - 🔢 **Sequential Numbering** - HD/2026-27/036, 037, 038...
+- 📦 **Month-wise Organization** - Invoices organized by month
+- 💾 **Bulk Download** - Download entire month as ZIP
 - 🌐 **Web Interface** - Easy-to-use web UI
 - 🚀 **REST API** - Full API for integrations
 
@@ -19,15 +21,16 @@ Automated invoice generation system with OCR, AI extraction, and cloud storage f
 - **OCR:** OCR.space API
 - **AI:** OpenRouter (Gemini 2.5 Flash)
 - **Excel:** openpyxl
-- **Storage:** Google Drive API
-- **Deployment:** PythonAnywhere (Free, Always-On)
+- **Cloud Storage:** Dropbox (recommended) or Google Drive
+- **Deployment:** Render, Railway, or Local PC
 
 ## 📋 Prerequisites
 
 - Python 3.10 or higher
 - OCR.space API key (free tier available)
-- OpenRouter API key
-- Google Drive API credentials (optional)
+- OpenRouter API key (optional, for AI extraction)
+- Dropbox access token (optional, for cloud backup - **RECOMMENDED**)
+- Google Drive API credentials (optional, alternative to Dropbox)
 
 ## 🚀 Quick Start
 
@@ -58,6 +61,9 @@ USE_OPENROUTER=true
 USE_MASTER_FILE=false
 TEMPLATE_PATH=inn sample.xlsx
 OUTPUT_DIR=generated_invoices
+
+# Cloud Backup (Optional - Recommended)
+DROPBOX_ACCESS_TOKEN=your_dropbox_token
 ```
 
 ### 4. Run Server
@@ -70,10 +76,11 @@ Open: http://localhost:8001
 
 ## 📚 Documentation
 
-- **[Deployment Guide](PYTHONANYWHERE_COMPLETE_GUIDE.md)** - Deploy to PythonAnywhere (Free)
-- **[Google Drive Setup](GOOGLE_DRIVE_SETUP.md)** - Cloud storage configuration
-- **[API Documentation](API_DOCUMENTATION.md)** - API endpoints reference
-- **[Template Verification](TEMPLATE_VERIFICATION_COMPLETE.md)** - Template mapping
+- **[Cloud Backup Setup](DROPBOX_SETUP_GUIDE.md)** - Setup Dropbox cloud backup (5 minutes)
+- **[Deployment Guide](DEPLOYMENT_QUICK_START.md)** - Deploy to Render, Railway, or Local PC
+- **[Google Drive Alternative](GOOGLE_DRIVE_FIX.md)** - Why Dropbox is recommended over Google Drive
+- **[Invoice Counter Guide](INVOICE_COUNTER_GUIDE.md)** - Manage sequential numbering
+- **[Complete Status](CLOUD_BACKUP_COMPLETE.md)** - Full system overview
 
 ## 🌐 API Endpoints
 
@@ -117,6 +124,24 @@ document_images: [aadhaar.jpg, dl.jpg]
 GET /api/invoice/download/{invoice_id}
 ```
 
+### Cloud Backup Status
+```bash
+GET /api/dropbox/status
+GET /api/drive/status
+```
+
+### Download Month as ZIP
+```bash
+GET /api/dropbox/download-month?year=2026&month=2
+```
+
+### Invoice Counter Management
+```bash
+GET /api/counter/status
+POST /api/counter/set
+POST /api/counter/reset
+```
+
 ## 📁 Project Structure
 
 ```
@@ -127,7 +152,8 @@ hilldrive-invoice/
 ├── hilldrive_excel_mapper.py        # Excel generation
 ├── ocr_service.py                   # OCR integration
 ├── openrouter_service.py            # AI extraction
-├── google_drive_storage.py          # Cloud storage
+├── dropbox_storage.py               # Dropbox cloud backup
+├── google_drive_storage.py          # Google Drive (alternative)
 ├── implementation_example.py        # Data extraction
 ├── requirements.txt                 # Dependencies
 ├── .env                             # Environment variables (not in Git)
@@ -155,34 +181,61 @@ Edit `invoice_counter.json`:
 
 Next invoice will be: HD/2026-27/036
 
-### Google Drive Integration
+### Cloud Backup Integration
 
-1. Setup Google Cloud project
-2. Enable Drive API
-3. Create service account
-4. Download credentials as `google_credentials.json`
-5. Place in project root
+**Dropbox (Recommended):**
 
-See [GOOGLE_DRIVE_SETUP.md](GOOGLE_DRIVE_SETUP.md) for details.
+1. Create Dropbox app at https://www.dropbox.com/developers/apps/create
+2. Generate access token
+3. Add to `.env`: `DROPBOX_ACCESS_TOKEN=your_token`
+4. Restart server
+
+**Features:**
+- ✅ FREE 2GB storage
+- ✅ Month-wise folders (Feb 2026, Mar 2026)
+- ✅ Auto-upload after invoice creation
+- ✅ Download entire month as ZIP
+- ✅ No service account issues
+
+See [DROPBOX_SETUP_GUIDE.md](DROPBOX_SETUP_GUIDE.md) for detailed instructions.
+
+**Google Drive (Alternative):**
+
+⚠️ **Not Recommended** - Service accounts have storage quota issues.
+
+See [GOOGLE_DRIVE_FIX.md](GOOGLE_DRIVE_FIX.md) for details.
 
 ## 🚀 Deployment
 
-### PythonAnywhere (Recommended - Free)
+### Render.com (Recommended)
 
 **Features:**
-- ✅ Always-on (no cold start)
-- ✅ Free forever
-- ✅ Easy setup (30 minutes)
+- ✅ Free tier available
+- ✅ Easy deployment
+- ✅ Auto-deploy from Git
+- ⚠️ Cold start on free tier
 
-**Guide:** [PYTHONANYWHERE_COMPLETE_GUIDE.md](PYTHONANYWHERE_COMPLETE_GUIDE.md)
+**Guide:** [RENDER_DEPLOYMENT.md](RENDER_DEPLOYMENT.md)
 
-### Alternative Options
+### Railway.app
 
-- **Railway.app** - $5/month, no cold start
-- **Render.com** - Free tier with cold start
-- **Oracle Cloud** - Free forever VPS
+**Features:**
+- ✅ $5 free credit/month
+- ✅ No cold start
+- ✅ Simple setup
 
-See [NO_COLD_START_DEPLOYMENT.md](NO_COLD_START_DEPLOYMENT.md) for comparison.
+**Guide:** [RAILWAY_DEPLOYMENT.md](RAILWAY_DEPLOYMENT.md)
+
+### Local PC with ngrok
+
+**Features:**
+- ✅ Completely FREE
+- ✅ Full control
+- ✅ No cold start
+
+**Guide:** [LOCAL_PC_DEPLOYMENT.md](LOCAL_PC_DEPLOYMENT.md)
+
+See [DEPLOYMENT_QUICK_START.md](DEPLOYMENT_QUICK_START.md) for comparison.
 
 ## 📊 Features in Detail
 
@@ -209,10 +262,11 @@ See [NO_COLD_START_DEPLOYMENT.md](NO_COLD_START_DEPLOYMENT.md) for comparison.
 
 ### Cloud Storage
 
-- Auto-upload to Google Drive
+- Auto-upload to Dropbox or Google Drive
 - Month-wise folder organization (Feb 2026, Mar 2026)
-- Download entire month at once
-- Share access with team
+- Download entire month as ZIP
+- Priority: Dropbox → Google Drive → Local only
+- FREE 2GB storage with Dropbox
 
 ## 🔒 Security
 
@@ -224,17 +278,16 @@ See [NO_COLD_START_DEPLOYMENT.md](NO_COLD_START_DEPLOYMENT.md) for comparison.
 ## 🧪 Testing
 
 ```bash
-# Test sequential numbering
-python test_sequential_numbers.py
+# Test invoice creation
+curl -X POST http://localhost:8002/api/invoice/create \
+  -H "Content-Type: application/json" \
+  -d '{"customer_name":"Test User","mobile_number":"9999888877"}'
 
-# Test individual files mode
-python test_individual_files.py
+# Check Dropbox status
+curl http://localhost:8002/api/dropbox/status
 
-# Test template verification
-python test_template_verification.py
-
-# Test Google Drive (requires credentials)
-python google_drive_storage.py
+# Check invoice counter
+curl http://localhost:8002/api/counter/status
 ```
 
 ## 📝 License
@@ -250,12 +303,18 @@ For issues or questions:
 
 ## 🎯 Roadmap
 
+- [x] OCR text extraction
+- [x] AI-powered data extraction
+- [x] Excel invoice generation
+- [x] Sequential invoice numbering
+- [x] Cloud backup (Dropbox)
+- [x] Month-wise organization
+- [x] Bulk download as ZIP
 - [ ] Database integration for invoice history
 - [ ] Email notifications
 - [ ] SMS integration
 - [ ] Mobile app
 - [ ] Analytics dashboard
-- [ ] Multi-language support
 
 ## 📸 Screenshots
 
@@ -273,12 +332,14 @@ For issues or questions:
 - FastAPI for the excellent framework
 - OCR.space for OCR API
 - OpenRouter for AI access
-- Google Drive for cloud storage
-- PythonAnywhere for free hosting
+- Dropbox for cloud storage
+- Google Drive for alternative storage
+- Render/Railway for hosting options
 
 ---
 
 **Made with ❤️ for Hill Drive**
 
-**Version:** 1.0.0  
-**Last Updated:** February 2026
+**Version:** 2.0.0  
+**Last Updated:** February 5, 2026  
+**Status:** ✅ Production Ready with Cloud Backup

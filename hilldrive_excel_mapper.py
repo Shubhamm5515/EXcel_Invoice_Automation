@@ -34,14 +34,16 @@ class HillDriveExcelWriter:
         # Cell mapping based on actual template structure from screenshot
         self.cell_map = {
             # Invoice header (Row 8)
-            'invoice_number': 'C8',      # HD/2026-27/001
+            'invoice_number': 'C8',      # HD/2026-27/001 (ONLY THIS ONE)
+            'invoice_number_old': 'D8',  # OLD number to clear
             'invoice_date': 'F8',        # 02/02/26
             
             # Customer details
-            'customer_name': 'B10',      # NAME (Row 10)
-            'address': 'B11',            # ADDRESS (Row 11-13, merged B11:D13)
-            'phone_number': 'B14',       # PHONE NO. (Row 14)
-            'place_of_supply': 'B15',    # PLACE OF SUPPLY (Row 15)
+            'customer_name': 'C10',      # NAME (Row 10) - Column C, not B
+            'license_no': 'D10',         # License No. (Row 10)
+            'address': 'C12',            # ADDRESS (Row 12) - Column C, not B11
+            'phone_number': 'C14',       # PHONE NO. (Row 14) - Column C
+            'place_of_supply': 'C15',    # PLACE OF SUPPLY (Row 15) - Column C
             
             # Delivery details
             'delivery_address': 'F11',   # DELIVERY ADD. (Row 11)
@@ -213,8 +215,32 @@ class HillDriveExcelWriter:
     
     def _fill_sheet_data(self, ws, data: Dict[str, Any]):
         """Fill worksheet with booking data (extracted from write method)"""
+        
+        # DEBUG: Print extracted data
+        print("\n" + "="*60)
+        print("📊 DATA BEING WRITTEN TO EXCEL:")
+        print("="*60)
+        print(f"Customer Name: {data.get('customer_name')}")
+        print(f"Company Name: {data.get('company_name')}")
+        print(f"Address: {data.get('address')}")
+        print(f"Mobile: {data.get('mobile_number')}")
+        print(f"Phone: {data.get('phone_number')}")
+        print("="*60 + "\n")
+        
         # Fill customer details
-        self._set_cell(ws, 'customer_name', data.get('customer_name') or data.get('company_name'))
+        customer_name = data.get('customer_name') or data.get('company_name')
+        if customer_name:
+            self._set_cell(ws, 'customer_name', customer_name)
+            print(f"✅ Set customer_name to C10: {customer_name}")
+        else:
+            print("⚠️  WARNING: No customer name found!")
+        
+        # Clear the old invoice number in D8
+        try:
+            ws['D8'].value = None  # Clear old invoice number
+            print("✅ Cleared old invoice number in D8")
+        except:
+            pass
         
         # Format address properly - handle multiline
         address = data.get('address')
@@ -224,8 +250,18 @@ class HillDriveExcelWriter:
             # Enable text wrapping for address cell
             from openpyxl.styles import Alignment
             ws[self.cell_map['address']].alignment = Alignment(wrap_text=True, vertical='top')
+            print(f"✅ Set address to C12: {address[:50]}...")
+        else:
+            print("⚠️  WARNING: No address found!")
         
-        self._set_cell(ws, 'phone_number', data.get('mobile_number'))
+        # Try both mobile_number and phone_number
+        phone = data.get('mobile_number') or data.get('phone_number')
+        if phone:
+            self._set_cell(ws, 'phone_number', phone)
+            print(f"✅ Set phone to C14: {phone}")
+        else:
+            print("⚠️  WARNING: No phone number found!")
+        
         self._set_cell(ws, 'place_of_supply', data.get('place_of_supply', 'Jaipur'))
         
         # Fill delivery details

@@ -22,9 +22,13 @@ from openrouter_service import openrouter_extractor
 from hilldrive_excel_mapper import HillDriveExcelWriter, process_booking_to_excel
 from implementation_example import BookingDataExtractor
 from google_drive_storage import GoogleDriveStorage
+from mega_storage import MegaStorage
+from telegram_storage import TelegramStorage
 
-# Initialize Google Drive storage (optional - works without credentials)
+# Initialize cloud storage (optional - works without credentials)
 drive_storage = GoogleDriveStorage()
+mega_storage = MegaStorage()
+telegram_storage = TelegramStorage()
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -230,6 +234,12 @@ async def create_invoice_from_data(data: BookingDataInput):
             output_path = result['master_file']
             sheet_name = result['sheet_name']
             message = f"Invoice added as sheet '{sheet_name}' in master file"
+            
+            # Upload master file to cloud storage (MEGA priority, fallback to Google Drive)
+            if mega_storage.m:
+                mega_storage.upload_invoice(output_path)
+            elif drive_storage.service:
+                drive_storage.upload_invoice(output_path)
         else:
             # Create separate file
             output_filename = f"{invoice_id}.xlsx"
@@ -237,9 +247,19 @@ async def create_invoice_from_data(data: BookingDataInput):
             writer.write(booking_data, output_path)
             message = "Invoice created successfully"
             
-            # Upload to Google Drive (if configured)
-            if drive_storage.service:
+            # Upload to cloud storage (Telegram > MEGA > Google Drive)
+            print(f"🔍 Checking cloud upload...")
+            if telegram_storage.bot_token:
+                print(f"📤 Calling Telegram upload for: {output_path}")
+                telegram_storage.upload_invoice(output_path)
+            elif mega_storage.m:
+                print(f"📤 Calling MEGA upload for: {output_path}")
+                mega_storage.upload_invoice(output_path)
+            elif drive_storage.service:
+                print(f"📤 Calling Google Drive upload for: {output_path}")
                 drive_storage.upload_invoice(output_path)
+            else:
+                print(f"⚠️  No cloud storage configured - file saved locally only")
         
         # Calculate processing time
         processing_time = int((datetime.now() - start_time).total_seconds() * 1000)
@@ -349,6 +369,17 @@ async def create_invoice_from_ocr(
             output_path = result['master_file']
             sheet_name = result['sheet_name']
             message = f"Invoice added as sheet '{sheet_name}' in master file"
+            
+            # Upload master file to cloud storage (MEGA priority, fallback to Google Drive)
+            print(f"🔍 [OCR-Master] Checking cloud upload... MEGA connected: {mega_storage.m is not None}")
+            if mega_storage.m:
+                print(f"📤 [OCR-Master] Calling MEGA upload for: {output_path}")
+                mega_storage.upload_invoice(output_path)
+            elif drive_storage.service:
+                print(f"📤 [OCR-Master] Calling Google Drive upload for: {output_path}")
+                drive_storage.upload_invoice(output_path)
+            else:
+                print(f"⚠️  [OCR-Master] No cloud storage configured - file saved locally only")
         else:
             # Create separate file
             output_filename = f"{invoice_id}.xlsx"
@@ -356,9 +387,19 @@ async def create_invoice_from_ocr(
             writer.write(booking_data, output_path)
             message = "Invoice created successfully from OCR"
             
-            # Upload to Google Drive (if configured)
-            if drive_storage.service:
+            # Upload to cloud storage (Telegram > MEGA > Google Drive)
+            print(f"🔍 [OCR] Checking cloud upload...")
+            if telegram_storage.bot_token:
+                print(f"📤 [OCR] Calling Telegram upload for: {output_path}")
+                telegram_storage.upload_invoice(output_path)
+            elif mega_storage.m:
+                print(f"📤 [OCR] Calling MEGA upload for: {output_path}")
+                mega_storage.upload_invoice(output_path)
+            elif drive_storage.service:
+                print(f"📤 [OCR] Calling Google Drive upload for: {output_path}")
                 drive_storage.upload_invoice(output_path)
+            else:
+                print(f"⚠️  [OCR] No cloud storage configured - file saved locally only")
         
         # Calculate processing time
         processing_time = int((datetime.now() - start_time).total_seconds() * 1000)
@@ -657,6 +698,389 @@ async def gemini_status():
         'use_gemini': settings.use_gemini,
         'message': 'Gemini AI is ready' if gemini_extractor.enabled else 'Gemini API key not configured'
     }
+
+
+# Google Drive Endpoints
+@app.get("/api/drive/status")
+async def drive_status():
+    """Check if Google Drive is configured and available"""
+    return {
+        'enabled': drive_storage.service is not None,
+        'message': 'Google Drive is connected' if drive_storage.service else 'Google Drive not configured'
+    }
+
+
+@app.get("/api/drive/month-summary")
+async def get_month_summary(year: int, month: int):
+    """
+    Get summary of invoices for a specific month
+    
+    - **year**: Year (e.g., 2026)
+    - **month**: Month (1-12)
+    """
+    try:
+        if not drive_storage.service:
+            raise HTTPException(
+                status_code=503,
+                detail="Google Drive is not configured. Please add google_credentials.json"
+            )
+        
+        summary = drive_storage.get_month_summary(year, month)
+        
+        if 'error' in summary:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to get month summary: {summary['error']}"
+            )
+        
+        return summary
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to get month summary: {str(e)}"
+        )
+
+
+@app.get("/api/drive/download-month")
+async def download_month(year: int, month: int):
+    """
+    Download all invoices from a specific month as ZIP
+    
+    - **year**: Year (e.g., 2026)
+    - **month**: Month (1-12)
+    """
+    try:
+        if not drive_storage.service:
+            raise HTTPException(
+                status_code=503,
+                detail="Google Drive is not configured"
+            )
+        
+        from datetime import datetime
+        import zipfile
+        import tempfile
+        from googleapiclient.http import MediaIoBaseDownload
+        import io
+        
+        # Get month folder
+        date = datetime(year, month, 1)
+        month_name = date.strftime('%b %Y')
+        
+        # Find folder
+        root_folder = drive_storage._get_or_create_folder('Hill Drive Invoices')
+        year_folder = drive_storage._get_or_create_folder(str(year), root_folder)
+        month_folder = drive_storage._get_or_create_folder(month_name, year_folder)
+        
+        if not month_folder:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No invoices found for {month_name}"
+            )
+        
+        # List files in folder
+        query = f"'{month_folder}' in parents and trashed=false"
+        results = drive_storage.service.files().list(
+            q=query,
+            fields='files(id, name)'
+        ).execute()
+        
+        files = results.get('files', [])
+        
+        if not files:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No invoices found for {month_name}"
+            )
+        
+        # Create ZIP file in memory
+        zip_buffer = io.BytesIO()
+        
+        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+            for file in files:
+                file_id = file['id']
+                file_name = file['name']
+                
+                # Download file from Google Drive
+                request = drive_storage.service.files().get_media(fileId=file_id)
+                file_buffer = io.BytesIO()
+                downloader = MediaIoBaseDownload(file_buffer, request)
+                
+                done = False
+                while not done:
+                    status, done = downloader.next_chunk()
+                
+                # Add to ZIP
+                zip_file.writestr(file_name, file_buffer.getvalue())
+        
+        # Prepare response
+        zip_buffer.seek(0)
+        
+        from fastapi.responses import StreamingResponse
+        
+        return StreamingResponse(
+            io.BytesIO(zip_buffer.getvalue()),
+            media_type="application/zip",
+            headers={
+                "Content-Disposition": f"attachment; filename=invoices_{month_name.replace(' ', '_')}.zip"
+            }
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to download month: {str(e)}"
+        )
+
+
+# MEGA Cloud Storage Endpoints
+@app.get("/api/mega/status")
+async def mega_status():
+    """Check if MEGA is configured and available"""
+    return {
+        'enabled': mega_storage.m is not None,
+        'storage': '20 GB FREE' if mega_storage.m else None,
+        'message': 'MEGA is connected' if mega_storage.m else 'MEGA not configured (set MEGA_EMAIL and MEGA_PASSWORD in .env)'
+    }
+
+
+@app.get("/api/mega/month-summary")
+async def get_mega_month_summary(year: int, month: int):
+    """
+    Get summary of invoices for a specific month from MEGA
+    
+    - **year**: Year (e.g., 2026)
+    - **month**: Month (1-12)
+    """
+    try:
+        if not mega_storage.m:
+            raise HTTPException(
+                status_code=503,
+                detail="MEGA is not configured. Please add MEGA_EMAIL and MEGA_PASSWORD to .env file"
+            )
+        
+        summary = mega_storage.get_month_summary(year, month)
+        
+        if 'error' in summary:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to get month summary: {summary['error']}"
+            )
+        
+        return summary
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to get month summary: {str(e)}"
+        )
+
+
+@app.get("/api/mega/download-month")
+async def download_mega_month(year: int, month: int):
+    """
+    Download all invoices from a specific month as ZIP from MEGA
+    
+    - **year**: Year (e.g., 2026)
+    - **month**: Month (1-12)
+    """
+    try:
+        if not mega_storage.m:
+            raise HTTPException(
+                status_code=503,
+                detail="MEGA is not configured"
+            )
+        
+        # Get ZIP file bytes
+        zip_bytes = mega_storage.download_month_as_zip(year, month)
+        
+        if not zip_bytes:
+            from datetime import datetime
+            date = datetime(year, month, 1)
+            month_name = date.strftime('%b %Y')
+            raise HTTPException(
+                status_code=404,
+                detail=f"No invoices found for {month_name}"
+            )
+        
+        # Return as streaming response
+        from fastapi.responses import StreamingResponse
+        import io
+        from datetime import datetime
+        
+        date = datetime(year, month, 1)
+        month_name = date.strftime('%b_%Y')
+        
+        return StreamingResponse(
+            io.BytesIO(zip_bytes),
+            media_type="application/zip",
+            headers={
+                "Content-Disposition": f"attachment; filename=invoices_{month_name}.zip"
+            }
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to download month: {str(e)}"
+        )
+
+
+# Invoice Counter Management Endpoints
+@app.get("/api/counter/status")
+async def get_counter_status():
+    """Get current invoice counter status"""
+    try:
+        import json
+        counter_file = 'invoice_counter.json'
+        
+        if os.path.exists(counter_file):
+            with open(counter_file, 'r') as f:
+                counter_data = json.load(f)
+        else:
+            counter_data = {
+                'last_invoice_number': 0,
+                'financial_year': '2025-26'
+            }
+        
+        # Calculate next invoice number
+        next_number = counter_data['last_invoice_number'] + 1
+        next_invoice = f"HD/{counter_data['financial_year']}/{next_number:03d}"
+        
+        return {
+            'current_number': counter_data['last_invoice_number'],
+            'financial_year': counter_data['financial_year'],
+            'next_invoice': next_invoice,
+            'last_invoice': f"HD/{counter_data['financial_year']}/{counter_data['last_invoice_number']:03d}" if counter_data['last_invoice_number'] > 0 else None
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to get counter status: {str(e)}"
+        )
+
+
+@app.post("/api/counter/set")
+async def set_counter(
+    start_number: int = Form(...),
+    financial_year: str = Form(None)
+):
+    """
+    Set invoice counter to a specific number
+    
+    - **start_number**: Starting invoice number (e.g., 36 for HD/2025-26/036)
+    - **financial_year**: Financial year (e.g., "2025-26", optional - defaults to current)
+    """
+    try:
+        import json
+        
+        # Validate start_number
+        if start_number < 1:
+            raise HTTPException(
+                status_code=400,
+                detail="Start number must be at least 1"
+            )
+        
+        # Get current financial year if not provided
+        if not financial_year:
+            now = datetime.now()
+            year = now.year
+            next_year = (year + 1) % 100
+            financial_year = f"{year}-{next_year:02d}"
+        
+        # Validate financial year format
+        if not re.match(r'^\d{4}-\d{2}$', financial_year):
+            raise HTTPException(
+                status_code=400,
+                detail="Financial year must be in format YYYY-YY (e.g., 2025-26)"
+            )
+        
+        # Set counter (subtract 1 because it will be incremented on next invoice)
+        counter_data = {
+            'last_invoice_number': start_number - 1,
+            'financial_year': financial_year
+        }
+        
+        counter_file = 'invoice_counter.json'
+        with open(counter_file, 'w') as f:
+            json.dump(counter_data, f, indent=2)
+        
+        next_invoice = f"HD/{financial_year}/{start_number:03d}"
+        
+        return {
+            'success': True,
+            'message': f'Counter set successfully',
+            'next_invoice': next_invoice,
+            'financial_year': financial_year,
+            'start_number': start_number
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to set counter: {str(e)}"
+        )
+
+
+@app.post("/api/counter/reset")
+async def reset_counter(financial_year: str = Form(None)):
+    """
+    Reset invoice counter to 0 for a new financial year
+    
+    - **financial_year**: Financial year (e.g., "2026-27", optional - defaults to current)
+    """
+    try:
+        import json
+        
+        # Get current financial year if not provided
+        if not financial_year:
+            now = datetime.now()
+            year = now.year
+            next_year = (year + 1) % 100
+            financial_year = f"{year}-{next_year:02d}"
+        
+        # Validate financial year format
+        if not re.match(r'^\d{4}-\d{2}$', financial_year):
+            raise HTTPException(
+                status_code=400,
+                detail="Financial year must be in format YYYY-YY (e.g., 2026-27)"
+            )
+        
+        # Reset counter
+        counter_data = {
+            'last_invoice_number': 0,
+            'financial_year': financial_year
+        }
+        
+        counter_file = 'invoice_counter.json'
+        with open(counter_file, 'w') as f:
+            json.dump(counter_data, f, indent=2)
+        
+        return {
+            'success': True,
+            'message': f'Counter reset for financial year {financial_year}',
+            'next_invoice': f"HD/{financial_year}/001",
+            'financial_year': financial_year
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to reset counter: {str(e)}"
+        )
 
 
 # Error handlers

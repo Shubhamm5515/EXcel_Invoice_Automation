@@ -108,11 +108,18 @@ Extract structured booking data from the provided OCR text and user input. Retur
 
 **EXTRACTION RULES:**
 
-1. **Customer Details:**
-   - Extract customer_name (handle formats like "Cx name:-Anirudh sharma", "NAME", "Bill To")
-   - Extract mobile_number (10 digits, handle "Cx no:- 6367498546", "Mobile:", "Phone:")
-   - Extract address (look for Plot no, street, city, state, pincode - combine multiple lines)
+1. **Customer Details (CRITICAL - MUST EXTRACT):**
+   - Extract customer_name OR company_name (handle formats like "Cx name:-Anirudh sharma", "NAME", "Bill To", "Company:")
+   - If you see a company name, put it in BOTH customer_name AND company_name fields
+   - Extract mobile_number (10 digits, handle "Cx no:- 6367498546", "Mobile:", "Phone:", "Contact:")
+   - Extract address (VERY IMPORTANT - look for ANY text with 6-digit pincode)
+     * Address can be: Plot no, Office no, Shop no, House no, Flat no
+     * Include: street, area, city, state, pincode
+     * Combine multiple lines if needed
+     * Example: "Plot no 80 Balaji vihar 62 niwaru road jhotwara jaipur Rajasthan, 302012"
+     * Example: "Office no.4, 2nd Floor, Anmol Pride, Baner, Pune - 411045"
    - Clean up formatting (proper capitalization)
+   - If address is missing from OCR, try to extract from any text with pincode
 
 2. **Vehicle Details:**
    - Extract vehicle_name from "Cat type:-Aura(RJ59CB2547)"

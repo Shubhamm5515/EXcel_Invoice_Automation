@@ -48,7 +48,7 @@ class GoogleDriveStorage:
             return None
         
         try:
-            # Search for existing folder
+            # Search for existing folder with supportsAllDrives
             query = f"name='{folder_name}' and mimeType='application/vnd.google-apps.folder' and trashed=false"
             if parent_id:
                 query += f" and '{parent_id}' in parents"
@@ -56,7 +56,9 @@ class GoogleDriveStorage:
             results = self.service.files().list(
                 q=query,
                 spaces='drive',
-                fields='files(id, name)'
+                fields='files(id, name)',
+                supportsAllDrives=True,
+                includeItemsFromAllDrives=True
             ).execute()
             
             folders = results.get('files', [])
@@ -64,7 +66,7 @@ class GoogleDriveStorage:
             if folders:
                 return folders[0]['id']
             
-            # Create new folder
+            # Create new folder with supportsAllDrives
             file_metadata = {
                 'name': folder_name,
                 'mimeType': 'application/vnd.google-apps.folder'
@@ -75,7 +77,8 @@ class GoogleDriveStorage:
             
             folder = self.service.files().create(
                 body=file_metadata,
-                fields='id'
+                fields='id',
+                supportsAllDrives=True
             ).execute()
             
             return folder.get('id')
@@ -107,6 +110,7 @@ class GoogleDriveStorage:
             date = invoice_date or datetime.now()
             
             # Create folder structure: Hill Drive Invoices/2026/Feb 2026/
+            # Use supportsAllDrives=True to work with both regular and shared drives
             root_folder = self._get_or_create_folder('Hill Drive Invoices')
             year_folder = self._get_or_create_folder(str(date.year), root_folder)
             month_folder = self._get_or_create_folder(
@@ -118,7 +122,7 @@ class GoogleDriveStorage:
                 print("⚠️  Could not create month folder")
                 return None
             
-            # Upload file
+            # Upload file with supportsAllDrives=True
             file_name = os.path.basename(file_path)
             file_metadata = {
                 'name': file_name,
@@ -127,13 +131,16 @@ class GoogleDriveStorage:
             
             media = MediaFileUpload(
                 file_path,
-                mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                resumable=True
             )
             
+            # Add supportsAllDrives parameter
             file = self.service.files().create(
                 body=file_metadata,
                 media_body=media,
-                fields='id, webViewLink'
+                fields='id, webViewLink',
+                supportsAllDrives=True
             ).execute()
             
             file_id = file.get('id')
@@ -146,7 +153,15 @@ class GoogleDriveStorage:
             return file_id
         
         except Exception as e:
-            print(f"⚠️  Upload failed: {e}")
+            error_msg = str(e)
+            if 'storageQuotaExceeded' in error_msg or 'Service Accounts do not have storage quota' in error_msg:
+                print(f"⚠️  Google Drive Upload Failed: Service account storage issue")
+                print(f"   Solution 1: Create a Shared Drive and use that instead")
+                print(f"   Solution 2: Share the 'Hill Drive Invoices' folder with your personal Google account")
+                print(f"   Solution 3: Disable Google Drive upload (invoices saved locally)")
+                print(f"   For now, invoice saved locally at: {file_path}")
+            else:
+                print(f"⚠️  Upload failed: {e}")
             return None
     
     def download_month_folder(self, year: int, month: int, output_dir: str = 'downloads'):

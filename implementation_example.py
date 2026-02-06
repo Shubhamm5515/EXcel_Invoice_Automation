@@ -94,17 +94,18 @@ class BookingDataExtractor:
                 data['mobile_number'] = match.group(1)
                 break
         
-        # Address from OCR - improved patterns
-        # Try multiple address patterns
+        # Address from OCR - improved patterns with MORE FLEXIBILITY
         address_patterns = [
-            # Pattern 1: Plot number with full address and pincode (most specific)
-            r'(Plot\s+no\s+\d+[^,\n]+,[^,\n]+,\s*\d{6})',
-            # Pattern 2: Plot number to pincode (greedy)
-            r'(Plot\s+no\s+\d+.+?\d{6})',
+            # Pattern 1: Any text ending with 6-digit pincode (most flexible)
+            r'([A-Za-z0-9\s,\.\-\/]+\d{6})',
+            # Pattern 2: Plot/Office number with address
+            r'((?:Plot|Office|Shop|House|Flat)\s*[Nn]o[\.:]?\s*[^,\n]+,[^,\n]+,?\s*\d{6})',
             # Pattern 3: After "Address:" or "Office:"
-            r'(?:Office|Address)[:\s]*([^\n]+\d{6})',
+            r'(?:Office|Address|Location)[:\s]*([^\n]+\d{6})',
             # Pattern 4: Any line with state and pincode
-            r'([^\n]*(?:Rajasthan|Delhi|Mumbai|Bangalore|Jaipur)[^\n]*\d{6})',
+            r'([^\n]*(?:Rajasthan|Delhi|Mumbai|Bangalore|Jaipur|Pune|Hyderabad|Chennai|Kolkata|Ahmedabad)[^\n]*\d{6})',
+            # Pattern 5: Multiple lines ending with pincode
+            r'([A-Za-z0-9][^\n]*\n[^\n]*\n[^\n]*\d{6})',
         ]
         
         for pattern in address_patterns:
@@ -118,9 +119,13 @@ class BookingDataExtractor:
                 # Remove leading/trailing punctuation
                 address = address.strip('.,;: ')
                 # Only set if it looks like a valid address (has pincode and reasonable length)
-                if re.search(r'\d{6}', address) and len(address) > 20:
+                if re.search(r'\d{6}', address) and len(address) > 15:
                     data['address'] = address
+                    print(f"✅ Extracted address: {address[:50]}...")
                     break
+        
+        if not data.get('address'):
+            print("⚠️  No address extracted from OCR")
 
     def _extract_vehicle_info(self, user_text: str, data: Dict):
         """Extract vehicle details"""
