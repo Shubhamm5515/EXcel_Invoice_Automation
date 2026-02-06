@@ -138,10 +138,10 @@ Before deploying, make sure:
 Copy these to your deployment platform:
 
 ```env
-OCR_SPACE_API_KEY=K88999613688957
+OCR_SPACE_API_KEY=your_ocr_api_key_here
 OCR_SPACE_API_URL=https://api.ocr.space/parse/image
 
-GEMINI_API_KEY=AIzaSyCqib0TlPBYcH3qoqlQvkgWJXkXu7t0jOk
+GEMINI_API_KEY=your_gemini_api_key_here
 GEMINI_MODEL=gemini-1.5-flash
 USE_GEMINI=false
 
