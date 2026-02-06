@@ -3,6 +3,7 @@
 .env.local
 .env.production
 google_credentials.json
+google_credentials.json.backup
 
 # Python
 __pycache__/

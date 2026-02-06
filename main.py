@@ -22,12 +22,10 @@ from openrouter_service import openrouter_extractor
 from hilldrive_excel_mapper import HillDriveExcelWriter, process_booking_to_excel
 from implementation_example import BookingDataExtractor
 from google_drive_storage import GoogleDriveStorage
-from mega_storage import MegaStorage
 from telegram_storage import TelegramStorage
 
 # Initialize cloud storage (optional - works without credentials)
 drive_storage = GoogleDriveStorage()
-mega_storage = MegaStorage()
 telegram_storage = TelegramStorage()
 
 # Initialize FastAPI app
@@ -235,9 +233,9 @@ async def create_invoice_from_data(data: BookingDataInput):
             sheet_name = result['sheet_name']
             message = f"Invoice added as sheet '{sheet_name}' in master file"
             
-            # Upload master file to cloud storage (MEGA priority, fallback to Google Drive)
-            if mega_storage.m:
-                mega_storage.upload_invoice(output_path)
+            # Upload master file to cloud storage (Telegram priority, fallback to Google Drive)
+            if telegram_storage.bot_token:
+                telegram_storage.upload_invoice(output_path)
             elif drive_storage.service:
                 drive_storage.upload_invoice(output_path)
         else:
@@ -247,14 +245,11 @@ async def create_invoice_from_data(data: BookingDataInput):
             writer.write(booking_data, output_path)
             message = "Invoice created successfully"
             
-            # Upload to cloud storage (Telegram > MEGA > Google Drive)
+            # Upload to cloud storage (Telegram > Google Drive)
             print(f"🔍 Checking cloud upload...")
             if telegram_storage.bot_token:
                 print(f"📤 Calling Telegram upload for: {output_path}")
                 telegram_storage.upload_invoice(output_path)
-            elif mega_storage.m:
-                print(f"📤 Calling MEGA upload for: {output_path}")
-                mega_storage.upload_invoice(output_path)
             elif drive_storage.service:
                 print(f"📤 Calling Google Drive upload for: {output_path}")
                 drive_storage.upload_invoice(output_path)
@@ -370,11 +365,11 @@ async def create_invoice_from_ocr(
             sheet_name = result['sheet_name']
             message = f"Invoice added as sheet '{sheet_name}' in master file"
             
-            # Upload master file to cloud storage (MEGA priority, fallback to Google Drive)
-            print(f"🔍 [OCR-Master] Checking cloud upload... MEGA connected: {mega_storage.m is not None}")
-            if mega_storage.m:
-                print(f"📤 [OCR-Master] Calling MEGA upload for: {output_path}")
-                mega_storage.upload_invoice(output_path)
+            # Upload master file to cloud storage (Telegram priority, fallback to Google Drive)
+            print(f"🔍 [OCR-Master] Checking cloud upload...")
+            if telegram_storage.bot_token:
+                print(f"📤 [OCR-Master] Calling Telegram upload for: {output_path}")
+                telegram_storage.upload_invoice(output_path)
             elif drive_storage.service:
                 print(f"📤 [OCR-Master] Calling Google Drive upload for: {output_path}")
                 drive_storage.upload_invoice(output_path)
@@ -387,14 +382,11 @@ async def create_invoice_from_ocr(
             writer.write(booking_data, output_path)
             message = "Invoice created successfully from OCR"
             
-            # Upload to cloud storage (Telegram > MEGA > Google Drive)
+            # Upload to cloud storage (Telegram > Google Drive)
             print(f"🔍 [OCR] Checking cloud upload...")
             if telegram_storage.bot_token:
                 print(f"📤 [OCR] Calling Telegram upload for: {output_path}")
                 telegram_storage.upload_invoice(output_path)
-            elif mega_storage.m:
-                print(f"📤 [OCR] Calling MEGA upload for: {output_path}")
-                mega_storage.upload_invoice(output_path)
             elif drive_storage.service:
                 print(f"📤 [OCR] Calling Google Drive upload for: {output_path}")
                 drive_storage.upload_invoice(output_path)
@@ -825,103 +817,6 @@ async def download_month(year: int, month: int):
             media_type="application/zip",
             headers={
                 "Content-Disposition": f"attachment; filename=invoices_{month_name.replace(' ', '_')}.zip"
-            }
-        )
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to download month: {str(e)}"
-        )
-
-
-# MEGA Cloud Storage Endpoints
-@app.get("/api/mega/status")
-async def mega_status():
-    """Check if MEGA is configured and available"""
-    return {
-        'enabled': mega_storage.m is not None,
-        'storage': '20 GB FREE' if mega_storage.m else None,
-        'message': 'MEGA is connected' if mega_storage.m else 'MEGA not configured (set MEGA_EMAIL and MEGA_PASSWORD in .env)'
-    }
-
-
-@app.get("/api/mega/month-summary")
-async def get_mega_month_summary(year: int, month: int):
-    """
-    Get summary of invoices for a specific month from MEGA
-    
-    - **year**: Year (e.g., 2026)
-    - **month**: Month (1-12)
-    """
-    try:
-        if not mega_storage.m:
-            raise HTTPException(
-                status_code=503,
-                detail="MEGA is not configured. Please add MEGA_EMAIL and MEGA_PASSWORD to .env file"
-            )
-        
-        summary = mega_storage.get_month_summary(year, month)
-        
-        if 'error' in summary:
-            raise HTTPException(
-                status_code=500,
-                detail=f"Failed to get month summary: {summary['error']}"
-            )
-        
-        return summary
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to get month summary: {str(e)}"
-        )
-
-
-@app.get("/api/mega/download-month")
-async def download_mega_month(year: int, month: int):
-    """
-    Download all invoices from a specific month as ZIP from MEGA
-    
-    - **year**: Year (e.g., 2026)
-    - **month**: Month (1-12)
-    """
-    try:
-        if not mega_storage.m:
-            raise HTTPException(
-                status_code=503,
-                detail="MEGA is not configured"
-            )
-        
-        # Get ZIP file bytes
-        zip_bytes = mega_storage.download_month_as_zip(year, month)
-        
-        if not zip_bytes:
-            from datetime import datetime
-            date = datetime(year, month, 1)
-            month_name = date.strftime('%b %Y')
-            raise HTTPException(
-                status_code=404,
-                detail=f"No invoices found for {month_name}"
-            )
-        
-        # Return as streaming response
-        from fastapi.responses import StreamingResponse
-        import io
-        from datetime import datetime
-        
-        date = datetime(year, month, 1)
-        month_name = date.strftime('%b_%Y')
-        
-        return StreamingResponse(
-            io.BytesIO(zip_bytes),
-            media_type="application/zip",
-            headers={
-                "Content-Disposition": f"attachment; filename=invoices_{month_name}.zip"
             }
         )
         

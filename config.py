@@ -41,10 +41,6 @@ class Settings(BaseSettings):
     # CORS Configuration
     cors_origins: str = "http://localhost:3000,http://localhost:8080"
     
-    # MEGA Configuration
-    mega_email: str = ""
-    mega_password: str = ""
-    
     # Telegram Bot Configuration (RECOMMENDED - Works everywhere!)
     telegram_bot_token: str = ""
     telegram_chat_id: str = ""
